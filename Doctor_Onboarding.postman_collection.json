@@ -1,0 +1,231 @@
+{
+	"info": {
+		"_postman_id": "doctor-onboarding-collection",
+		"name": "Doctor Onboarding",
+		"description": "Complete onboarding flow for doctors in ECare+",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Onboarding Auth",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 201 || pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    if (response.data && response.data.doctorId) {",
+							"        pm.collectionVariables.set('doctorId', response.data.doctorId);",
+							"    }",
+							"    if (response.data && response.data.mockOtp) {",
+							"        pm.collectionVariables.set('otp', response.data.mockOtp);",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"password\": \"SecurePass123\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/doctors/onboarding/auth",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"doctors",
+						"onboarding",
+						"auth"
+					]
+				},
+				"description": "Step 1: Create account with email and password. OTP will be sent to email (or returned in response if email is not configured)."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Verify OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    if (response.data && response.data.token) {",
+							"        pm.collectionVariables.set('token', response.data.token);",
+							"    }",
+							"    if (response.data && response.data.doctorId) {",
+							"        pm.collectionVariables.set('doctorId', response.data.doctorId);",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"otp\": \"{{otp}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/doctors/onboarding/verify-otp",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"doctors",
+						"onboarding",
+						"verify-otp"
+					]
+				},
+				"description": "Step 2: Verify the OTP received via email. Returns JWT token for authenticated requests."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Personal Info",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"name\": \"Dr. John Doe\",\n    \"age\": 35,\n    \"gender\": \"MALE\",\n    \"languages\": [\"English\", \"Hindi\"],\n    \"contactNumber\": \"+1234567890\",\n    \"whatsappNumber\": \"+1234567890\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/doctors/onboarding/personal-info",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"doctors",
+						"onboarding",
+						"personal-info"
+					]
+				},
+				"description": "Step 3: Submit personal information. Gender options: MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Professional Info",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"specialty\": \"Cardiology\",\n    \"yearsOfExperience\": 10,\n    \"latestQualification\": \"MD in Cardiology\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/doctors/onboarding/professional-info",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"doctors",
+						"onboarding",
+						"professional-info"
+					]
+				},
+				"description": "Step 4: Submit professional information. Years of experience must be between 0 and 50."
+			},
+			"response": []
+		},
+		{
+			"name": "5. Availability",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"address\": \"123 Medical Center Drive\",\n    \"city\": \"New York\",\n    \"locality\": \"Manhattan\",\n    \"availableDays\": [\"MONDAY\", \"TUESDAY\", \"WEDNESDAY\", \"THURSDAY\", \"FRIDAY\"],\n    \"availableTiming\": \"09:00-17:00\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/doctors/onboarding/availability",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"doctors",
+						"onboarding",
+						"availability"
+					]
+				},
+				"description": "Step 5: Submit availability information. Available days: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY. Timing format: HH:MM-HH:MM (e.g., 09:00-17:00)"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "doctorId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "otp",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

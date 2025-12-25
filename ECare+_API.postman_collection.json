@@ -1,0 +1,460 @@
+{
+	"info": {
+		"_postman_id": "ecare-api-collection",
+		"name": "ECare+ API Collection",
+		"description": "Complete API collection for ECare+ including Doctor and Patient endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Doctors",
+			"item": [
+				{
+					"name": "Onboarding",
+					"item": [
+						{
+							"name": "1. Onboarding Auth",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.data && response.data.doctorId) {",
+											"        pm.collectionVariables.set('doctorId', response.data.doctorId);",
+											"    }",
+											"    if (response.data && response.data.mockOtp) {",
+											"        pm.collectionVariables.set('otp', response.data.mockOtp);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"password\": \"SecurePass123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/doctors/onboarding/auth",
+									"host": ["{{baseUrl}}"],
+									"path": ["doctors", "onboarding", "auth"]
+								}
+							}
+						},
+						{
+							"name": "2. Verify OTP",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.data && response.data.token) {",
+											"        pm.collectionVariables.set('token', response.data.token);",
+											"    }",
+											"    if (response.data && response.data.doctorId) {",
+											"        pm.collectionVariables.set('doctorId', response.data.doctorId);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"otp\": \"{{otp}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/doctors/onboarding/verify-otp",
+									"host": ["{{baseUrl}}"],
+									"path": ["doctors", "onboarding", "verify-otp"]
+								}
+							}
+						},
+						{
+							"name": "3. Personal Info",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"name\": \"Dr. John Doe\",\n    \"age\": 35,\n    \"gender\": \"MALE\",\n    \"languages\": [\"English\", \"Hindi\"],\n    \"contactNumber\": \"+1234567890\",\n    \"whatsappNumber\": \"+1234567890\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/doctors/onboarding/personal-info",
+									"host": ["{{baseUrl}}"],
+									"path": ["doctors", "onboarding", "personal-info"]
+								}
+							}
+						},
+						{
+							"name": "4. Professional Info",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"specialty\": \"Cardiology\",\n    \"yearsOfExperience\": 10,\n    \"latestQualification\": \"MD in Cardiology\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/doctors/onboarding/professional-info",
+									"host": ["{{baseUrl}}"],
+									"path": ["doctors", "onboarding", "professional-info"]
+								}
+							}
+						},
+						{
+							"name": "5. Availability",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"address\": \"123 Medical Center Drive\",\n    \"city\": \"New York\",\n    \"locality\": \"Manhattan\",\n    \"availableDays\": [\"MONDAY\", \"TUESDAY\", \"WEDNESDAY\", \"THURSDAY\", \"FRIDAY\"],\n    \"availableTiming\": \"09:00-17:00\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/doctors/onboarding/availability",
+									"host": ["{{baseUrl}}"],
+									"path": ["doctors", "onboarding", "availability"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.token) {",
+									"        pm.collectionVariables.set('token', response.data.token);",
+									"    }",
+									"    if (response.data && response.data.doctorId) {",
+									"        pm.collectionVariables.set('doctorId', response.data.doctorId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"password\": \"SecurePass123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/doctors/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["doctors", "login"]
+						}
+					}
+				},
+				{
+					"name": "Fetch All Doctors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/doctors",
+							"host": ["{{baseUrl}}"],
+							"path": ["doctors"]
+						}
+					}
+				},
+				{
+					"name": "Fetch Doctor by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/doctors/{{doctorId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["doctors", "{{doctorId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Patients",
+			"item": [
+				{
+					"name": "Onboarding",
+					"item": [
+						{
+							"name": "1. Onboarding Auth",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201 || pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.data && response.data.patientId) {",
+											"        pm.collectionVariables.set('patientId', response.data.patientId);",
+											"    }",
+											"    if (response.data && response.data.mockOtp) {",
+											"        pm.collectionVariables.set('patientOtp', response.data.mockOtp);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"patient@example.com\",\n    \"password\": \"SecurePass123\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/patients/onboarding/auth",
+									"host": ["{{baseUrl}}"],
+									"path": ["patients", "onboarding", "auth"]
+								}
+							}
+						},
+						{
+							"name": "2. Verify OTP",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.data && response.data.token) {",
+											"        pm.collectionVariables.set('patientToken', response.data.token);",
+											"    }",
+											"    if (response.data && response.data.patientId) {",
+											"        pm.collectionVariables.set('patientId', response.data.patientId);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"patient@example.com\",\n    \"otp\": \"{{patientOtp}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/patients/onboarding/verify-otp",
+									"host": ["{{baseUrl}}"],
+									"path": ["patients", "onboarding", "verify-otp"]
+								}
+							}
+						},
+						{
+							"name": "3. Personal Info",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{patientToken}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"patientId\": \"{{patientId}}\",\n    \"name\": \"John Doe\",\n    \"phone\": \"+1234567890\",\n    \"gender\": \"MALE\",\n    \"age\": 30,\n    \"city\": \"New York\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/patients/onboarding/personal-info",
+									"host": ["{{baseUrl}}"],
+									"path": ["patients", "onboarding", "personal-info"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.token) {",
+									"        pm.collectionVariables.set('patientToken', response.data.token);",
+									"    }",
+									"    if (response.data && response.data.patientId) {",
+									"        pm.collectionVariables.set('patientId', response.data.patientId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"patient@example.com\",\n    \"password\": \"SecurePass123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/patients/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["patients", "login"]
+						}
+					}
+				},
+				{
+					"name": "Fetch All Patients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/patients",
+							"host": ["{{baseUrl}}"],
+							"path": ["patients"]
+						}
+					}
+				},
+				{
+					"name": "Fetch Patient by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/patients/{{patientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["patients", "{{patientId}}"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "doctorId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "patientId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "patientToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "otp",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "patientOtp",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

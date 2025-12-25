@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# package-lock.json should be committed for consistency
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Prisma
+# Keep schema.prisma and migrations, but ignore generated client if needed
+# Uncomment if you want to ignore generated Prisma client
+# node_modules/.prisma/
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional: Keep your source files but ignore compiled JS if you want
+# Uncomment if you want to ignore compiled JavaScript
+# *.js
+# !src/**/*.js
+
+# Optional: Ignore test files if needed
+# __tests__/
+# *.test.ts
+# *.spec.ts
+

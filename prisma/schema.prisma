@@ -1,0 +1,99 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
+    PREFER_NOT_TO_SAY
+}
+
+enum OnboardingStep {
+    EMAIL_VERIFIED
+    PERSONAL_INFO_COMPLETE
+    PROFESSIONAL_INFO_COMPLETE
+    AVAILABILITY_COMPLETE
+    COMPLETE
+}
+
+enum DayOfWeek {
+    MONDAY
+    TUESDAY
+    WEDNESDAY
+    THURSDAY
+    FRIDAY
+    SATURDAY
+    SUNDAY
+}
+
+model Doctor {
+    id       String @id @default(uuid())
+    email    String @unique
+    password String? // Hashed password for email/password auth
+
+    // Personal Info
+    name           String?
+    age            Int?
+    gender         Gender?
+    languages      String[]
+    contactNumber  String?
+    whatsappNumber String?
+
+    // Professional Info
+    specialty           String?
+    yearsOfExperience   Int?
+    latestQualification String?
+
+    // Availability
+    address         String?
+    city            String?
+    locality        String?
+    availableDays   DayOfWeek[]
+    availableTiming String? // e.g., "09:00-17:00"
+
+    onboardingStep OnboardingStep @default(EMAIL_VERIFIED)
+
+    otp       String?
+    otpExpiry DateTime?
+
+    viewCount Int @default(0) // Number of times doctor profile was viewed
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    savedByPatients Patient[] @relation("SavedDoctors")
+}
+
+enum PatientOnboardingStep {
+    EMAIL_VERIFIED
+    PERSONAL_INFO_COMPLETE
+}
+
+model Patient {
+    id       String @id @default(uuid())
+    email    String @unique
+    password String? // Hashed password for email/password auth
+
+    // Personal Info
+    name    String?
+    phone   String?
+    gender  Gender?
+    age     Int?
+    city    String?
+
+    onboardingStep PatientOnboardingStep @default(EMAIL_VERIFIED)
+
+    otp       String?
+    otpExpiry DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    savedDoctors Doctor[] @relation("SavedDoctors")
+}
