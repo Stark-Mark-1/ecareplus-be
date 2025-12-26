@@ -173,14 +173,18 @@ export const onboardingAuth = async (req: Request, res: Response) => {
             console.log(`✅ OTP email sent successfully to ${email}`);
         } catch (emailError) {
             console.error('❌ Email send error:', emailError);
-            if (process.env.NODE_ENV === 'development') {
+            // Return OTP in response if email fails (for development/testing)
+            // In production, you should use a reliable email service like SendGrid, Mailgun, etc.
+            const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_MOCK_OTP === 'true';
+            if (isDev) {
                 return res.status(200).json({
                     success: true,
-                    message: 'Account created. OTP generated (email failed, dev mode)',
+                    message: 'Account created. OTP generated (email failed)',
                     data: {
                         doctorId: doctor.id,
                         mockOtp: otp
-                    }
+                    },
+                    warning: 'Email service is not configured properly. Please set up EMAIL_USER and EMAIL_PASS or use a production email service.'
                 });
             }
             return res.status(500).json({
