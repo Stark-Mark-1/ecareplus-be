@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient, Gender, PatientOnboardingStep } from '@prisma/client';
-import nodemailer from 'nodemailer';
+import * as brevo from '@getbrevo/brevo';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -10,34 +10,29 @@ const prisma = new PrismaClient();
 const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
 
-// Email transporter setup (Brevo/Sendinblue)
-const createTransporter = () => {
-    const emailUser = process.env.EMAIL_USER;
+// Brevo API client setup (using HTTP API instead of SMTP to avoid Render blocking)
+let brevoApiInstance: brevo.TransactionalEmailsApi | null = null;
+
+const initializeBrevo = () => {
     const brevoApiKey = process.env.BREVO_API_KEY;
 
-    if (!emailUser || !brevoApiKey) {
-        console.warn('⚠️  EMAIL_USER or BREVO_API_KEY not configured. Email sending will be disabled.');
+    if (!brevoApiKey) {
+        console.warn('⚠️  BREVO_API_KEY not configured. Email sending will be disabled.');
         return null;
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host: 'smtp-relay.brevo.com',
-            port: 587,
-            secure: false, // true for 465, false for other ports
-            auth: {
-                user: emailUser,
-                pass: brevoApiKey
-            }
-        });
-        return transporter;
+        brevoApiInstance = new brevo.TransactionalEmailsApi();
+        brevoApiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
+        console.log('✅ Brevo API client initialized successfully');
+        return brevoApiInstance;
     } catch (error) {
-        console.error('❌ Failed to create email transporter:', error);
+        console.error('❌ Failed to initialize Brevo API:', error);
         return null;
     }
 };
 
-const transporter = createTransporter();
+initializeBrevo();
 
 // Helper functions
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -138,8 +133,8 @@ export const onboardingAuth = async (req: Request, res: Response) => {
             },
         });
 
-        // Send Email
-        if (!transporter) {
+        // Send Email using Brevo API
+        if (!brevoApiInstance) {
             const isDev = process.env.NODE_ENV !== 'production';
             return res.status(200).json({
                 success: true,
@@ -148,30 +143,33 @@ export const onboardingAuth = async (req: Request, res: Response) => {
                     patientId: patient.id,
                     mockOtp: isDev ? otp : undefined
                 },
-                note: 'Set EMAIL_USER and BREVO_API_KEY environment variables to enable email sending'
+                note: 'Set BREVO_API_KEY environment variable to enable email sending'
             });
         }
 
         try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'Your ECare+ Verification Code',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #4CAF50;">ECare+ Verification Code</h2>
-                        <p>Your verification code is:</p>
-                        <h1 style="color: #2196F3; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
-                        <p>This code will expire in 10 minutes.</p>
-                        <p>If you didn't request this code, please ignore this email.</p>
-                    </div>
-                `
-            });
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.subject = 'Your ECare+ Verification Code';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #4CAF50;">ECare+ Verification Code</h2>
+                    <p>Your verification code is:</p>
+                    <h1 style="color: #2196F3; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+                    <p>This code will expire in 10 minutes.</p>
+                    <p>If you didn't request this code, please ignore this email.</p>
+                </div>
+            `;
+            sendSmtpEmail.sender = { 
+                name: 'ECare+', 
+                email: process.env.EMAIL_USER || 'noreply@ecareplus.com' 
+            };
+            sendSmtpEmail.to = [{ email }];
+
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
             console.log(`✅ OTP email sent successfully to ${email}`);
-        } catch (emailError) {
+        } catch (emailError: any) {
             console.error('❌ Email send error:', emailError);
             // Return OTP in response if email fails (for development/testing)
-            // In production, you should use a reliable email service like SendGrid, Mailgun, etc.
             const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_MOCK_OTP === 'true';
             if (isDev) {
                 return res.status(200).json({
@@ -181,7 +179,7 @@ export const onboardingAuth = async (req: Request, res: Response) => {
                         patientId: patient.id,
                         mockOtp: otp
                     },
-                    warning: 'Email service is not configured properly. Please set up EMAIL_USER and BREVO_API_KEY environment variables.'
+                    warning: 'Email service is not configured properly. Please set up BREVO_API_KEY environment variable.'
                 });
             }
             return res.status(500).json({
