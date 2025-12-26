@@ -10,22 +10,24 @@ const prisma = new PrismaClient();
 const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
 
-// Email transporter setup
+// Email transporter setup (Brevo/Sendinblue)
 const createTransporter = () => {
     const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
+    const brevoApiKey = process.env.BREVO_API_KEY;
 
-    if (!emailUser || !emailPass) {
-        console.warn('⚠️  EMAIL_USER or EMAIL_PASS not configured. Email sending will be disabled.');
+    if (!emailUser || !brevoApiKey) {
+        console.warn('⚠️  EMAIL_USER or BREVO_API_KEY not configured. Email sending will be disabled.');
         return null;
     }
 
     try {
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp-relay.brevo.com',
+            port: 587,
+            secure: false, // true for 465, false for other ports
             auth: {
                 user: emailUser,
-                pass: emailPass
+                pass: brevoApiKey
             }
         });
         return transporter;
@@ -151,7 +153,7 @@ export const onboardingAuth = async (req: Request, res: Response) => {
                     doctorId: doctor.id,
                     mockOtp: isDev ? otp : undefined
                 },
-                note: 'Set EMAIL_USER and EMAIL_PASS environment variables to enable email sending'
+                note: 'Set EMAIL_USER and BREVO_API_KEY environment variables to enable email sending'
             });
         }
 
@@ -184,7 +186,7 @@ export const onboardingAuth = async (req: Request, res: Response) => {
                         doctorId: doctor.id,
                         mockOtp: otp
                     },
-                    warning: 'Email service is not configured properly. Please set up EMAIL_USER and EMAIL_PASS or use a production email service.'
+                    warning: 'Email service is not configured properly. Please set up EMAIL_USER and BREVO_API_KEY environment variables.'
                 });
             }
             return res.status(500).json({
