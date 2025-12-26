@@ -23,6 +23,7 @@ const initializeBrevo = () => {
 
     try {
         brevoApiInstance = new brevo.TransactionalEmailsApi();
+        // Set API key using the enum for apiKey type
         brevoApiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
         console.log('✅ Brevo API client initialized successfully');
         return brevoApiInstance;
