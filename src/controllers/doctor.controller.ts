@@ -700,6 +700,7 @@ export const fetchAll = async (req: Request, res: Response) => {
                 age: true,
                 gender: true,
                 specialty: true,
+                yearsOfExperience: true,
                 city: true,
                 locality: true,
                 viewCount: true,
