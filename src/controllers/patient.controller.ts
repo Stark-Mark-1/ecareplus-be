@@ -631,11 +631,21 @@ export const saveDoctor = async (req: Request, res: Response) => {
 
         // Save the doctor using direct insert into relation table (more reliable)
         try {
-            await prisma.$executeRaw`
+            const result = await prisma.$executeRaw`
                 INSERT INTO "_SavedDoctors" ("A", "B") 
                 VALUES (${patientId}, ${doctorId})
                 ON CONFLICT ("A", "B") DO NOTHING
             `;
+            
+            // Verify the insert worked by checking if the relation exists
+            const verifyRelation = await prisma.$queryRaw<Array<{ A: string; B: string }>>`
+                SELECT "A", "B" FROM "_SavedDoctors" 
+                WHERE "A" = ${patientId} AND "B" = ${doctorId}
+            `;
+            
+            if (!verifyRelation || verifyRelation.length === 0) {
+                console.warn('Warning: Insert may have failed silently. Relation not found after insert.');
+            }
         } catch (prismaError: any) {
             // Handle Prisma foreign key constraint errors
             if (prismaError.code === 'P2003' || prismaError.code === '23503') {
@@ -763,9 +773,99 @@ export const getSavedDoctors = async (req: Request, res: Response) => {
 
         // Check if patient exists
         const patient = await prisma.patient.findUnique({
-            where: { id: patientId },
-            include: {
-                savedDoctors: {
+            where: { id: patientId }
+        });
+
+        if (!patient) {
+            return res.status(404).json({
+                success: false,
+                message: 'Patient not found',
+                error: 'PATIENT_NOT_FOUND'
+            });
+        }
+
+        // Fetch saved doctors using direct query to ensure we get the data
+        // First try Prisma relation, then fallback to raw query if needed
+        type DoctorSelect = {
+            id: string;
+            email: string;
+            name: string | null;
+            age: number | null;
+            gender: string | null;
+            specialty: string | null;
+            city: string | null;
+            locality: string | null;
+            yearsOfExperience: number | null;
+            viewCount: number;
+            createdAt: Date;
+        };
+        
+        let savedDoctors: DoctorSelect[] = [];
+        
+        try {
+            const patientWithDoctors = await prisma.patient.findUnique({
+                where: { id: patientId },
+                include: {
+                    savedDoctors: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            age: true,
+                            gender: true,
+                            specialty: true,
+                            city: true,
+                            locality: true,
+                            yearsOfExperience: true,
+                            viewCount: true,
+                            createdAt: true
+                        }
+                    }
+                }
+            });
+            savedDoctors = patientWithDoctors?.savedDoctors || [];
+            
+            // If Prisma relation returns empty but we know doctors were saved, use raw query as fallback
+            if (savedDoctors.length === 0) {
+                console.log('Prisma relation returned empty, checking with raw query...');
+                const relationRows = await prisma.$queryRaw<Array<{ B: string }>>`
+                    SELECT "B" FROM "_SavedDoctors" WHERE "A" = ${patientId}
+                `;
+                
+                const doctorIds = relationRows.map(row => row.B);
+                
+                if (doctorIds.length > 0) {
+                    const doctors = await prisma.doctor.findMany({
+                        where: { id: { in: doctorIds } },
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            age: true,
+                            gender: true,
+                            specialty: true,
+                            city: true,
+                            locality: true,
+                            yearsOfExperience: true,
+                            viewCount: true,
+                            createdAt: true
+                        }
+                    });
+                    savedDoctors = doctors;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching with Prisma relation, trying raw query:', error);
+            // Fallback: Use raw query to get doctor IDs, then fetch doctors
+            const relationRows = await prisma.$queryRaw<Array<{ B: string }>>`
+                SELECT "B" FROM "_SavedDoctors" WHERE "A" = ${patientId}
+            `;
+            
+            const doctorIds = relationRows.map(row => row.B);
+            
+            if (doctorIds.length > 0) {
+                const doctors = await prisma.doctor.findMany({
+                    where: { id: { in: doctorIds } },
                     select: {
                         id: true,
                         email: true,
@@ -779,23 +879,16 @@ export const getSavedDoctors = async (req: Request, res: Response) => {
                         viewCount: true,
                         createdAt: true
                     }
-                }
+                });
+                savedDoctors = doctors;
             }
-        });
-
-        if (!patient) {
-            return res.status(404).json({
-                success: false,
-                message: 'Patient not found',
-                error: 'PATIENT_NOT_FOUND'
-            });
         }
 
         return res.status(200).json({
             success: true,
             message: 'Saved doctors fetched successfully',
-            data: patient.savedDoctors,
-            count: patient.savedDoctors.length
+            data: savedDoctors,
+            count: savedDoctors.length
         });
     } catch (error) {
         console.error('Get saved doctors error:', error);
