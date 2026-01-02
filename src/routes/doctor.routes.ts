@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { onboardingAuth, onboardingPersonalInfo, onboardingProfessionalInfo, onboardingAvailability, verifyOtp, login, fetchAll, fetchById, viewDoctorProfile } from '../controllers/doctor.controller';
+import { onboardingAuth, onboardingPersonalInfo, onboardingProfessionalInfo, onboardingAvailability, verifyOtp, login, fetchAll, fetchById, viewDoctorProfile, getLeads } from '../controllers/doctor.controller';
 
 const router = Router();
 
@@ -13,6 +13,7 @@ router.post('/onboarding/availability', onboardingAvailability); // Location (ad
 // Auth and fetch routes
 router.post('/login', login); // Login with email and password
 router.get('/', fetchAll); // Fetch all doctors
+router.get('/:id/leads', getLeads); // Get all patients who viewed doctor's profile (must come before /:id)
 router.get('/:id', fetchById); // Fetch doctor by ID
 router.post('/:id/view', viewDoctorProfile); // View doctor profile (increments view count)
 

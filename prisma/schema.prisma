@@ -68,6 +68,7 @@ model Doctor {
     updatedAt DateTime @updatedAt
 
     savedByPatients Patient[] @relation("SavedDoctors")
+    leads Lead[] // Patients who viewed this doctor's profile
 }
 
 enum PatientOnboardingStep {
@@ -96,4 +97,25 @@ model Patient {
     updatedAt DateTime @updatedAt
 
     savedDoctors Doctor[] @relation("SavedDoctors")
+    leads Lead[] // Doctor profiles this patient has viewed
+}
+
+// Lead model to track when patients view doctor profiles
+model Lead {
+    id String @id @default(uuid())
+    
+    doctorId String
+    doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+    
+    patientId String
+    patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+    
+    viewedAt DateTime @default(now())
+    
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    @@unique([doctorId, patientId]) // Prevent duplicate leads for same doctor-patient pair
+    @@index([doctorId])
+    @@index([patientId])
 }

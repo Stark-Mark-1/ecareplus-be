@@ -867,6 +867,38 @@ export const viewDoctorProfile = async (req: Request, res: Response) => {
             }
         });
 
+        // Create lead record if patientId is provided
+        if (patientId) {
+            try {
+                // Check if patient exists
+                const patient = await prisma.patient.findUnique({
+                    where: { id: patientId }
+                });
+
+                if (patient) {
+                    // Create or update lead (upsert to handle duplicate views)
+                    await prisma.lead.upsert({
+                        where: {
+                            doctorId_patientId: {
+                                doctorId: id,
+                                patientId: patientId
+                            }
+                        },
+                        update: {
+                            viewedAt: new Date() // Update the viewed timestamp
+                        },
+                        create: {
+                            doctorId: id,
+                            patientId: patientId
+                        }
+                    });
+                }
+            } catch (leadError) {
+                // Log error but don't fail the request if lead creation fails
+                console.error('Error creating lead record:', leadError);
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: 'Doctor profile viewed successfully',
@@ -877,6 +909,122 @@ export const viewDoctorProfile = async (req: Request, res: Response) => {
         return res.status(500).json({
             success: false,
             message: 'An error occurred while viewing doctor profile',
+            error: 'INTERNAL_SERVER_ERROR'
+        });
+    }
+};
+
+// Helper function to verify JWT token
+const verifyToken = (req: Request): { doctorId: string; email: string } | null => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return null;
+        }
+
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, JWT_SECRET) as { doctorId: string; email: string; type?: string };
+        
+        // Verify it's a doctor token
+        if (decoded.type && decoded.type !== 'doctor') {
+            return null;
+        }
+
+        return { doctorId: decoded.doctorId, email: decoded.email };
+    } catch (error) {
+        return null;
+    }
+};
+
+// Get all leads (patients who viewed doctor's profile)
+export const getLeads = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Doctor ID is required',
+                error: 'MISSING_ID'
+            });
+        }
+
+        // Verify authentication
+        const tokenData = verifyToken(req);
+        if (!tokenData) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required. Please provide a valid JWT token.',
+                error: 'UNAUTHORIZED'
+            });
+        }
+
+        // Verify that the authenticated doctor is requesting their own leads
+        if (tokenData.doctorId !== id) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only view your own leads',
+                error: 'FORBIDDEN'
+            });
+        }
+
+        // Check if doctor exists
+        const doctor = await prisma.doctor.findUnique({
+            where: { id },
+            select: { id: true }
+        });
+
+        if (!doctor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Doctor not found',
+                error: 'DOCTOR_NOT_FOUND'
+            });
+        }
+
+        // Fetch all leads for this doctor with patient details
+        const leads = await prisma.lead.findMany({
+            where: {
+                doctorId: id
+            },
+            include: {
+                patient: {
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                        phone: true,
+                        gender: true,
+                        age: true,
+                        city: true,
+                        createdAt: true
+                    }
+                }
+            },
+            orderBy: {
+                viewedAt: 'desc' // Most recent views first
+            }
+        });
+
+        // Format the response
+        const formattedLeads = leads.map(lead => ({
+            id: lead.id,
+            patient: lead.patient,
+            viewedAt: lead.viewedAt,
+            createdAt: lead.createdAt
+        }));
+
+        return res.status(200).json({
+            success: true,
+            message: 'Leads fetched successfully',
+            data: formattedLeads,
+            count: formattedLeads.length
+        });
+    } catch (error) {
+        console.error('Get leads error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An error occurred while fetching leads',
             error: 'INTERNAL_SERVER_ERROR'
         });
     }
