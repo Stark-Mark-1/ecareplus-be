@@ -559,6 +559,12 @@ export const fetchById = async (req: Request, res: Response) => {
     }
 };
 
+// UUID validation helper
+const isValidUUID = (uuid: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+};
+
 // Save a doctor
 export const saveDoctor = async (req: Request, res: Response) => {
     try {
@@ -569,6 +575,23 @@ export const saveDoctor = async (req: Request, res: Response) => {
                 success: false,
                 message: 'Patient ID and Doctor ID are required',
                 error: 'MISSING_FIELDS'
+            });
+        }
+
+        // Validate UUID format
+        if (!isValidUUID(patientId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid patient ID format. Must be a valid UUID.',
+                error: 'INVALID_PATIENT_ID_FORMAT'
+            });
+        }
+
+        if (!isValidUUID(doctorId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid doctor ID format. Must be a valid UUID.',
+                error: 'INVALID_DOCTOR_ID_FORMAT'
             });
         }
 
@@ -592,17 +615,13 @@ export const saveDoctor = async (req: Request, res: Response) => {
             });
         }
 
-        // Check if already saved
-        const existingRelation = await prisma.patient.findUnique({
-            where: { id: patientId },
-            include: {
-                savedDoctors: {
-                    where: { id: doctorId }
-                }
-            }
-        });
+        // Check if already saved by querying the relation table directly
+        const existingRelation = await prisma.$queryRaw<Array<{ A: string; B: string }>>`
+            SELECT "A", "B" FROM "_SavedDoctors" 
+            WHERE "A" = ${patientId} AND "B" = ${doctorId}
+        `;
 
-        if (existingRelation && existingRelation.savedDoctors.length > 0) {
+        if (existingRelation && existingRelation.length > 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Doctor is already saved',
@@ -610,15 +629,36 @@ export const saveDoctor = async (req: Request, res: Response) => {
             });
         }
 
-        // Save the doctor
-        await prisma.patient.update({
-            where: { id: patientId },
-            data: {
-                savedDoctors: {
-                    connect: { id: doctorId }
+        // Save the doctor using direct insert into relation table (more reliable)
+        try {
+            await prisma.$executeRaw`
+                INSERT INTO "_SavedDoctors" ("A", "B") 
+                VALUES (${patientId}, ${doctorId})
+                ON CONFLICT ("A", "B") DO NOTHING
+            `;
+        } catch (prismaError: any) {
+            // Handle Prisma foreign key constraint errors
+            if (prismaError.code === 'P2003' || prismaError.code === '23503') {
+                console.error('Foreign key constraint error:', prismaError);
+                // Check which foreign key failed
+                const constraint = prismaError.meta?.constraint || prismaError.constraint || '';
+                if (constraint.includes('_SavedDoctors_A_fkey') || constraint.includes('A_fkey')) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid patient ID. The patient may not exist or the ID format is incorrect.',
+                        error: 'INVALID_PATIENT_ID'
+                    });
+                } else if (constraint.includes('_SavedDoctors_B_fkey') || constraint.includes('B_fkey')) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid doctor ID. The doctor may not exist or the ID format is incorrect.',
+                        error: 'INVALID_DOCTOR_ID'
+                    });
                 }
             }
-        });
+            // Re-throw if it's not a foreign key error
+            throw prismaError;
+        }
 
         return res.status(200).json({
             success: true,
@@ -628,12 +668,31 @@ export const saveDoctor = async (req: Request, res: Response) => {
                 doctorId
             }
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Save doctor error:', error);
+        
+        // Handle specific Prisma errors
+        if (error.code === 'P2002') {
+            return res.status(400).json({
+                success: false,
+                message: 'This doctor is already saved by this patient',
+                error: 'DOCTOR_ALREADY_SAVED'
+            });
+        }
+        
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                success: false,
+                message: 'Patient or doctor not found',
+                error: 'NOT_FOUND'
+            });
+        }
+        
         return res.status(500).json({
             success: false,
             message: 'An error occurred while saving doctor',
-            error: 'INTERNAL_SERVER_ERROR'
+            error: 'INTERNAL_SERVER_ERROR',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
