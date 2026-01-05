@@ -111,11 +111,100 @@ export const onboardingAuth = async (req: Request, res: Response) => {
         // Check if patient already exists
         const existingPatient = await prisma.patient.findUnique({ where: { email } });
         if (existingPatient) {
-            return res.status(409).json({
-                success: false,
-                message: 'An account with this email already exists',
-                error: 'EMAIL_ALREADY_EXISTS'
-            });
+            // Check if patient profile is incomplete - allow re-registration
+            const isIncomplete = !existingPatient.name || !existingPatient.phone || !existingPatient.city;
+            
+            if (isIncomplete) {
+                // Generate new OTP for incomplete user
+                const otp = generateOTP();
+                const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
+                const hashedPassword = await bcrypt.hash(password, 10);
+
+                // Update existing incomplete account with new password and OTP
+                const updatedPatient = await prisma.patient.update({
+                    where: { email },
+                    data: {
+                        password: hashedPassword,
+                        otp,
+                        otpExpiry,
+                        onboardingStep: PatientOnboardingStep.EMAIL_VERIFIED // Reset to email verification step
+                    }
+                });
+
+                // Send Email using Brevo API
+                if (!brevoApiInstance) {
+                    const isDev = process.env.NODE_ENV !== 'production';
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Welcome back! Account updated successfully. OTP generated for verification.',
+                        data: {
+                            patientId: updatedPatient.id,
+                            mockOtp: isDev ? otp : undefined,
+                            isReturningIncompleteUser: true
+                        },
+                        note: 'Set BREVO_API_KEY environment variable to enable email sending'
+                    });
+                }
+
+                try {
+                    const sendSmtpEmail = new brevo.SendSmtpEmail();
+                    sendSmtpEmail.subject = 'Welcome Back to ECare+ - Verification Code';
+                    sendSmtpEmail.htmlContent = `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #4CAF50;">Welcome Back to ECare+!</h2>
+                            <p>We noticed you didn't complete your registration. Let's finish setting up your profile.</p>
+                            <p>Your verification code is:</p>
+                            <h1 style="color: #2196F3; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+                            <p>This code will expire in 10 minutes.</p>
+                            <p>If you didn't request this code, please ignore this email.</p>
+                        </div>
+                    `;
+                    sendSmtpEmail.sender = { 
+                        name: 'ECare+', 
+                        email: process.env.EMAIL_USER || 'noreply@ecareplus.com' 
+                    };
+                    sendSmtpEmail.to = [{ email }];
+
+                    await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+                    console.log(`✅ Welcome back OTP email sent successfully to ${email}`);
+                } catch (emailError: any) {
+                    console.error('❌ Email send error:', emailError);
+                    const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_MOCK_OTP === 'true';
+                    if (isDev) {
+                        return res.status(200).json({
+                            success: true,
+                            message: 'Welcome back! Account updated. OTP generated (email failed)',
+                            data: {
+                                patientId: updatedPatient.id,
+                                mockOtp: otp,
+                                isReturningIncompleteUser: true
+                            },
+                            warning: 'Email service is not configured properly. Please set up BREVO_API_KEY environment variable.'
+                        });
+                    }
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Failed to send verification email. Please try again later.',
+                        error: 'EMAIL_SEND_FAILED'
+                    });
+                }
+
+                return res.status(200).json({
+                    success: true,
+                    message: 'Welcome back! Account updated successfully. Verification code sent to your email.',
+                    data: {
+                        patientId: updatedPatient.id,
+                        isReturningIncompleteUser: true
+                    }
+                });
+            } else {
+                // Complete account exists
+                return res.status(409).json({
+                    success: false,
+                    message: 'An account with this email already exists and is fully registered. Please use the login option.',
+                    error: 'EMAIL_ALREADY_EXISTS_COMPLETE'
+                });
+            }
         }
 
         // Generate OTP

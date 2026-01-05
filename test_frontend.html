@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECare+ Google OAuth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .google-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            margin: 10px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        .google-btn:hover {
+            background: #3367d6;
+        }
+        .google-btn img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        .doctor-btn {
+            background: #28a745;
+        }
+        .doctor-btn:hover {
+            background: #218838;
+        }
+        .patient-btn {
+            background: #17a2b8;
+        }
+        .patient-btn:hover {
+            background: #138496;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .url-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 ECare+ Google OAuth Test</h1>
+        <p>Test the Google OAuth integration with re-registration support</p>
+
+        <div class="section">
+            <h2>🚀 Quick Test</h2>
+            <p>Click these buttons to test the Google OAuth flow:</p>
+            
+            <a href="http://localhost:3000/auth/google/doctor" class="google-btn doctor-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue as Doctor
+            </a>
+            
+            <a href="http://localhost:3000/auth/google/patient" class="google-btn patient-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue as Patient
+            </a>
+        </div>
+
+        <div class="section">
+            <h2>📋 Test Scenarios</h2>
+            <h3>Scenario 1: New User</h3>
+            <p>First time using Google OAuth - will create new account and redirect to onboarding</p>
+            
+            <h3>Scenario 2: Returning Incomplete User</h3>
+            <p>User who started registration but didn't complete onboarding - will allow re-registration</p>
+            
+            <h3>Scenario 3: Complete User</h3>
+            <p>User with complete profile - will login directly to dashboard</p>
+        </div>
+
+        <div class="section">
+            <h2>🔧 Configuration</h2>
+            <p>Make sure your backend is configured with:</p>
+            <div class="url-display">
+                FRONTEND_URL=http://localhost:5000<br>
+                GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback<br>
+                GOOGLE_CLIENT_ID=your-google-client-id<br>
+                GOOGLE_CLIENT_SECRET=your-google-client-secret
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📱 Expected Redirect URLs</h2>
+            <h3>Success:</h3>
+            <div class="url-display">
+                http://localhost:5500/auth/success?token=JWT_TOKEN&userType=doctor&redirectTo=/onboarding&isNewUser=true&isReturningIncompleteUser=false
+            </div>
+            
+            <h3>Error:</h3>
+            <div class="url-display">
+                http://localhost:5500/auth/error?message=Authentication%20failed
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Frontend Pages You Need</h2>
+            <ul>
+                <li><strong>/auth/success</strong> - Handle successful authentication</li>
+                <li><strong>/auth/error</strong> - Handle authentication errors</li>
+                <li><strong>/onboarding</strong> - Complete user profile</li>
+                <li><strong>/dashboard</strong> - Main application</li>
+            </ul>
+        </div>
+
+        <div id="status" class="status info" style="display: none;">
+            <strong>Status:</strong> <span id="statusText"></span>
+        </div>
+    </div>
+
+    <script>
+        // Check if we're on a success/error page
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const error = urlParams.get('message');
+        const userType = urlParams.get('userType');
+        const isNewUser = urlParams.get('isNewUser');
+        const isReturningIncompleteUser = urlParams.get('isReturningIncompleteUser');
+        const redirectTo = urlParams.get('redirectTo');
+
+        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+
+        if (token) {
+            statusDiv.className = 'status success';
+            statusDiv.style.display = 'block';
+            statusText.innerHTML = `
+                ✅ Authentication successful!<br>
+                User Type: ${userType}<br>
+                New User: ${isNewUser}<br>
+                Returning Incomplete: ${isReturningIncompleteUser}<br>
+                Redirect To: ${redirectTo}<br>
+                Token: ${token.substring(0, 20)}...
+            `;
+        } else if (error) {
+            statusDiv.className = 'status error';
+            statusDiv.style.display = 'block';
+            statusText.innerHTML = `❌ Authentication failed: ${decodeURIComponent(error)}`;
+        }
+    </script>
+</body>
+</html>

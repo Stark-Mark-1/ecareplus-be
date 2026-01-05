@@ -36,6 +36,7 @@ model Doctor {
     id       String @id @default(uuid())
     email    String @unique
     password String? // Hashed password for email/password auth
+    googleId String? @unique // Google OAuth ID
 
     // Personal Info
     name           String?
@@ -80,6 +81,7 @@ model Patient {
     id       String @id @default(uuid())
     email    String @unique
     password String? // Hashed password for email/password auth
+    googleId String? @unique // Google OAuth ID
 
     // Personal Info
     name    String?
