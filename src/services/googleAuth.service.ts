@@ -90,7 +90,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                     isReturningIncompleteUser: !isOnboardingComplete,
                     user: doctor,
                     token,
-                    redirectTo: isOnboardingComplete ? '/dashboard' : '/onboarding'
+                    redirectTo: isOnboardingComplete ? '/doctor/dashboard' : '/doctor/onboarding'
                 };
             }
 
@@ -119,7 +119,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: true,
                         user: updatedDoctor,
                         token,
-                        redirectTo: '/onboarding'
+                        redirectTo: '/doctor/onboarding'
                     };
                 } else {
                     // Complete account - just link Google ID
@@ -135,7 +135,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: false,
                         user: updatedDoctor,
                         token,
-                        redirectTo: '/dashboard'
+                        redirectTo: '/doctor/dashboard'
                     };
                 }
             }
@@ -157,7 +157,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                 isReturningIncompleteUser: false,
                 user: newDoctor,
                 token,
-                redirectTo: '/onboarding'
+                redirectTo: '/doctor/onboarding'
             };
 
         } else {
@@ -175,7 +175,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                     isReturningIncompleteUser: false,
                     user: patient,
                     token,
-                    redirectTo: patient.name ? '/dashboard' : '/onboarding' // Check if basic info is complete
+                    redirectTo: patient.name ? '/patient/dashboard' : '/patient/onboarding' // Check if basic info is complete
                 };
             }
 
@@ -206,7 +206,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: true,
                         user: updatedPatient,
                         token,
-                        redirectTo: '/onboarding'
+                        redirectTo: '/patient/onboarding'
                     };
                 } else {
                     // Complete account - just link Google ID
@@ -222,7 +222,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: false,
                         user: updatedPatient,
                         token,
-                        redirectTo: '/dashboard'
+                        redirectTo: '/patient/dashboard'
                     };
                 }
             }
@@ -244,7 +244,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                 isReturningIncompleteUser: false,
                 user: newPatient,
                 token,
-                redirectTo: '/onboarding'
+                redirectTo: '/patient/onboarding'
             };
         }
     } catch (error) {

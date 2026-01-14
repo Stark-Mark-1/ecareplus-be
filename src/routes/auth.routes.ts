@@ -60,7 +60,7 @@ router.get('/google/callback',
 
             // Successful authentication - redirect with token and additional info
             const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-            const redirectUrl = `${frontendUrl}/callback?token=${result.token}&userType=${userType}&redirectTo=${encodeURIComponent(result.redirectTo || '/dashboard')}&isNewUser=${result.isNewUser}&isReturningIncompleteUser=${result.isReturningIncompleteUser || false}`;
+            const redirectUrl = `${frontendUrl}${result.redirectTo}?token=${result.token}&userType=${userType}&isNewUser=${result.isNewUser}&isReturningIncompleteUser=${result.isReturningIncompleteUser || false}`;
             
             return res.redirect(redirectUrl);
 
