@@ -90,7 +90,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                     isReturningIncompleteUser: !isOnboardingComplete,
                     user: doctor,
                     token,
-                    redirectTo: isOnboardingComplete ? '/doctor/dashboard' : '/doctor/onboarding'
+                    redirectTo: isOnboardingComplete ? '/doctor/dashboard' : '/onboarding'
                 };
             }
 
@@ -119,7 +119,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: true,
                         user: updatedDoctor,
                         token,
-                        redirectTo: '/doctor/onboarding'
+                        redirectTo: '/onboarding'
                     };
                 } else {
                     // Complete account - just link Google ID
@@ -157,7 +157,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                 isReturningIncompleteUser: false,
                 user: newDoctor,
                 token,
-                redirectTo: '/doctor/onboarding'
+                redirectTo: '/onboarding'
             };
 
         } else {
