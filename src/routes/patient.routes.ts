@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { onboardingAuth, verifyOtp, onboardingPersonalInfo, login, fetchAll, fetchById, saveDoctor, unsaveDoctor, getSavedDoctors } from '../controllers/patient.controller';
+import { onboardingAuth, verifyOtp, onboardingPersonalInfo, login, fetchAll, fetchById, saveDoctor, unsaveDoctor, getSavedDoctors, forgotPassword, verifyResetOtp, resetPassword } from '../controllers/patient.controller';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -11,7 +11,10 @@ router.post('/onboarding/personal-info', authenticateJWT, onboardingPersonalInfo
 
 // Auth and fetch routes
 router.post('/login', login); // Login with email and password
-router.get('/', authenticateJWT, fetchAll); // Fetch all patients -- PROTECTED
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-otp', verifyResetOtp);
+router.post('/reset-password', resetPassword);
+router.get('/', fetchAll); // Fetch all patients
 
 // Saved doctors routes (must come before /:id route)
 router.post('/saved-doctors', authenticateJWT, saveDoctor); // Save a doctor
