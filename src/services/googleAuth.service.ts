@@ -135,7 +135,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: false,
                         user: updatedDoctor,
                         token,
-                        redirectTo: '/doctor/dashboard'
+                        redirectTo: '/dashboard'
                     };
                 }
             }
