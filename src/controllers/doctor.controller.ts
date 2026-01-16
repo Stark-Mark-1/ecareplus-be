@@ -593,13 +593,14 @@ export const onboardingProfessionalInfo = async (req: Request, res: Response) =>
 // Availability: Location, Available Days, Timing
 export const onboardingAvailability = async (req: Request, res: Response) => {
     try {
-        const { doctorId, address, city, locality, availableDays, availableTiming } = req.body;
-
+        const { doctorId, address, city, locality, state, availableDays, availableTiming } = req.body;
+        
         // Validation
-        if (!doctorId || !address || !city || !locality || !availableDays || !availableTiming) {
+        // Allow either locality or state, but prefer state
+        if (!doctorId || !address || !city || (!locality && !state) || !availableDays || !availableTiming) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required: address, city, locality, availableDays, availableTiming',
+                message: 'All fields are required: address, city, state (or locality), availableDays, availableTiming',
                 error: 'MISSING_FIELDS'
             });
         }
@@ -620,11 +621,16 @@ export const onboardingAvailability = async (req: Request, res: Response) => {
             });
         }
 
-        if (typeof locality !== 'string' || locality.trim().length < 2) {
+        // Logic: If state is provided, use it. If not, use locality as state (backward compatibility).
+        // If locality is missing but state is there, use state as locality.
+        const finalState = state || locality;
+        const finalLocality = locality || state;
+
+        if (typeof finalState !== 'string' || finalState.trim().length < 2) {
             return res.status(400).json({
                 success: false,
-                message: 'Locality must be at least 2 characters long',
-                error: 'INVALID_LOCALITY'
+                message: 'State/Locality must be at least 2 characters long',
+                error: 'INVALID_STATE'
             });
         }
 
@@ -679,7 +685,8 @@ export const onboardingAvailability = async (req: Request, res: Response) => {
             data: {
                 address: address.trim(),
                 city: city.trim(),
-                locality: locality.trim(),
+                locality: finalLocality.trim(),
+                state: finalState.trim(),
                 availableDays: availableDays as DayOfWeek[],
                 availableTiming: availableTiming.trim(),
                 onboardingStep: OnboardingStep.COMPLETE
