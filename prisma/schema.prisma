@@ -33,13 +33,14 @@ enum DayOfWeek {
 }
 
 model Doctor {
-    id       String @id @default(uuid())
-    email    String @unique
+    id       String  @id @default(uuid())
+    email    String  @unique
     password String? // Hashed password for email/password auth
     googleId String? @unique // Google OAuth ID
 
     // Personal Info
-    name           String?
+    name String?
+
     age            Int?
     gender         Gender?
     languages      String[]
@@ -52,9 +53,11 @@ model Doctor {
     latestQualification String?
 
     // Availability
-    address         String?
-    city            String?
-    locality        String?
+    address  String?
+    city     String?
+    locality String?
+    state    String?
+
     availableDays   DayOfWeek[]
     availableTiming String? // e.g., "09:00-17:00"
 
@@ -69,7 +72,7 @@ model Doctor {
     updatedAt DateTime @updatedAt
 
     savedByPatients Patient[] @relation("SavedDoctors")
-    leads Lead[] // Patients who viewed this doctor's profile
+    leads           Lead[] // Patients who viewed this doctor's profile
 }
 
 enum PatientOnboardingStep {
@@ -78,17 +81,19 @@ enum PatientOnboardingStep {
 }
 
 model Patient {
-    id       String @id @default(uuid())
-    email    String @unique
+    id       String  @id @default(uuid())
+    email    String  @unique
     password String? // Hashed password for email/password auth
     googleId String? @unique // Google OAuth ID
 
     // Personal Info
-    name    String?
-    phone   String?
-    gender  Gender?
-    age     Int?
-    city    String?
+    name   String?
+    phone  String?
+    gender Gender?
+    age    Int?
+    city   String?
+    state  String?
+    issues String[]
 
     onboardingStep PatientOnboardingStep @default(EMAIL_VERIFIED)
 
@@ -99,24 +104,24 @@ model Patient {
     updatedAt DateTime @updatedAt
 
     savedDoctors Doctor[] @relation("SavedDoctors")
-    leads Lead[] // Doctor profiles this patient has viewed
+    leads        Lead[] // Doctor profiles this patient has viewed
 }
 
 // Lead model to track when patients view doctor profiles
 model Lead {
     id String @id @default(uuid())
-    
+
     doctorId String
-    doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-    
+    doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
     patientId String
-    patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-    
+    patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
     viewedAt DateTime @default(now())
-    
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    
+
     @@unique([doctorId, patientId]) // Prevent duplicate leads for same doctor-patient pair
     @@index([doctorId])
     @@index([patientId])
