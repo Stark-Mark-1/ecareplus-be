@@ -90,7 +90,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                     isReturningIncompleteUser: !isOnboardingComplete,
                     user: doctor,
                     token,
-                    redirectTo: isOnboardingComplete ? '/doctor/dashboard' : '/onboarding'
+                    redirectTo: isOnboardingComplete ? '/dashboard' : '/onboarding'
                 };
             }
 
@@ -135,7 +135,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: false,
                         user: updatedDoctor,
                         token,
-                        redirectTo: '/doctor/dashboard'
+                        redirectTo: '/dashboard'
                     };
                 }
             }

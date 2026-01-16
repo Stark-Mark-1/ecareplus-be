@@ -393,13 +393,13 @@ export const verifyOtp = async (req: Request, res: Response) => {
 // Personal Info: Name, Phone, Gender, Age, City
 export const onboardingPersonalInfo = async (req: Request, res: Response) => {
     try {
-        const { patientId, name, phone, gender, age, city } = req.body;
+        const { patientId, name, phone, gender, age, city, state, issues } = req.body;
 
         // Validation
-        if (!patientId || !name || !phone || !gender || !age || !city) {
+        if (!patientId || !name || !phone || !gender || !age || !city || !state) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required: name, phone, gender, age, city',
+                message: 'All fields are required: name, phone, gender, age, city, state',
                 error: 'MISSING_FIELDS'
             });
         }
@@ -445,6 +445,22 @@ export const onboardingPersonalInfo = async (req: Request, res: Response) => {
             });
         }
 
+        if (typeof state !== 'string' || state.trim().length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: 'State must be at least 2 characters long',
+                error: 'INVALID_STATE'
+            });
+        }
+
+        if (issues && (!Array.isArray(issues) || !issues.every(i => typeof i === 'string'))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Issues must be an array of strings',
+                error: 'INVALID_ISSUES'
+            });
+        }
+
         // Check if patient exists and is at correct step
         const patient = await prisma.patient.findUnique({ where: { id: patientId } });
         if (!patient) {
@@ -470,7 +486,9 @@ export const onboardingPersonalInfo = async (req: Request, res: Response) => {
                 phone: phone.trim(),
                 gender: gender as Gender,
                 age: ageNum,
-                city: city.trim()
+                city: city.trim(),
+                state: state.trim(),
+                issues: issues || []
             },
         });
 
@@ -575,6 +593,8 @@ export const fetchAll = async (req: Request, res: Response) => {
                 gender: true,
                 age: true,
                 city: true,
+                state: true,
+                issues: true,
                 onboardingStep: true,
                 createdAt: true
             }
@@ -619,6 +639,8 @@ export const fetchById = async (req: Request, res: Response) => {
                 gender: true,
                 age: true,
                 city: true,
+                state: true,
+                issues: true,
                 onboardingStep: true,
                 createdAt: true,
                 updatedAt: true
@@ -986,6 +1008,155 @@ export const getSavedDoctors = async (req: Request, res: Response) => {
             message: 'An error occurred while fetching saved doctors',
             error: 'INTERNAL_SERVER_ERROR'
         });
+    }
+};
+
+// Forgot Password: Send OTP
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required',
+                error: 'MISSING_FIELDS'
+            });
+        }
+
+        const patient = await prisma.patient.findUnique({ where: { email } });
+        if (!patient) {
+            return res.status(404).json({
+                success: false,
+                message: 'Account not found',
+                error: 'PATIENT_NOT_FOUND'
+            });
+        }
+
+        const otp = generateOTP();
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+        await prisma.patient.update({
+            where: { email },
+            data: { otp, otpExpiry }
+        });
+
+        if (!brevoApiInstance) {
+            const isDev = process.env.NODE_ENV !== 'production';
+            return res.status(200).json({
+                success: true,
+                message: 'OTP generated (Email disabled)',
+                data: { mockOtp: isDev ? otp : undefined }
+            });
+        }
+
+        try {
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.subject = 'Reset Your ECare+ Password';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Password Reset Request</h2>
+                    <p>Your password reset code is:</p>
+                    <h1 style="color: #2196F3; letter-spacing: 5px;">${otp}</h1>
+                    <p>This code expires in 10 minutes.</p>
+                </div>
+            `;
+            sendSmtpEmail.sender = { name: 'ECare+', email: process.env.EMAIL_USER || 'noreply@ecareplus.com' };
+            sendSmtpEmail.to = [{ email }];
+
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+            return res.status(200).json({
+                success: true,
+                message: 'Password reset code sent to your email'
+            });
+        } catch (emailError) {
+            console.error('Email send error:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send email',
+                error: 'EMAIL_SEND_FAILED'
+            });
+        }
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An error occurred',
+            error: 'INTERNAL_SERVER_ERROR'
+        });
+    }
+};
+
+// Verify Reset OTP
+export const verifyResetOtp = async (req: Request, res: Response) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: 'Email and OTP required' });
+        }
+
+        const patient = await prisma.patient.findUnique({ where: { email } });
+        if (!patient || patient.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        if (patient.otpExpiry && new Date() > patient.otpExpiry) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'OTP verified successfully'
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Verification failed' });
+    }
+};
+
+// Reset Password
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, message: 'All fields required' });
+        }
+
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.valid) {
+            return res.status(400).json({ success: false, message: passwordValidation.error });
+        }
+
+        const patient = await prisma.patient.findUnique({ where: { email } });
+        if (!patient || patient.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid request' });
+        }
+
+        if (patient.otpExpiry && new Date() > patient.otpExpiry) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.patient.update({
+            where: { email },
+            data: {
+                password: hashedPassword,
+                otp: null,
+                otpExpiry: null
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Password has been reset successfully'
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Password reset failed' });
     }
 };
 

@@ -593,13 +593,14 @@ export const onboardingProfessionalInfo = async (req: Request, res: Response) =>
 // Availability: Location, Available Days, Timing
 export const onboardingAvailability = async (req: Request, res: Response) => {
     try {
-        const { doctorId, address, city, locality, availableDays, availableTiming } = req.body;
-
+        const { doctorId, address, city, locality, state, availableDays, availableTiming } = req.body;
+        
         // Validation
-        if (!doctorId || !address || !city || !locality || !availableDays || !availableTiming) {
+        // Allow either locality or state, but prefer state
+        if (!doctorId || !address || !city || (!locality && !state) || !availableDays || !availableTiming) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required: address, city, locality, availableDays, availableTiming',
+                message: 'All fields are required: address, city, state (or locality), availableDays, availableTiming',
                 error: 'MISSING_FIELDS'
             });
         }
@@ -620,11 +621,16 @@ export const onboardingAvailability = async (req: Request, res: Response) => {
             });
         }
 
-        if (typeof locality !== 'string' || locality.trim().length < 2) {
+        // Logic: If state is provided, use it. If not, use locality as state (backward compatibility).
+        // If locality is missing but state is there, use state as locality.
+        const finalState = state || locality;
+        const finalLocality = locality || state;
+
+        if (typeof finalState !== 'string' || finalState.trim().length < 2) {
             return res.status(400).json({
                 success: false,
-                message: 'Locality must be at least 2 characters long',
-                error: 'INVALID_LOCALITY'
+                message: 'State/Locality must be at least 2 characters long',
+                error: 'INVALID_STATE'
             });
         }
 
@@ -679,7 +685,8 @@ export const onboardingAvailability = async (req: Request, res: Response) => {
             data: {
                 address: address.trim(),
                 city: city.trim(),
-                locality: locality.trim(),
+                locality: finalLocality.trim(),
+                state: finalState.trim(),
                 availableDays: availableDays as DayOfWeek[],
                 availableTiming: availableTiming.trim(),
                 onboardingStep: OnboardingStep.COMPLETE
@@ -1115,5 +1122,157 @@ export const getLeads = async (req: Request, res: Response) => {
             message: 'An error occurred while fetching leads',
             error: 'INTERNAL_SERVER_ERROR'
         });
+    }
+};
+
+// Forgot Password: Send OTP
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required',
+                error: 'MISSING_FIELDS'
+            });
+        }
+
+        const doctor = await prisma.doctor.findUnique({ where: { email } });
+        if (!doctor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Account not found',
+                error: 'DOCTOR_NOT_FOUND'
+            });
+        }
+
+        // Generate OTP
+        const otp = generateOTP();
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+        // Save OTP to DB
+        await prisma.doctor.update({
+            where: { email },
+            data: { otp, otpExpiry }
+        });
+
+        // Send Email
+        if (!brevoApiInstance) {
+            const isDev = process.env.NODE_ENV !== 'production';
+            return res.status(200).json({
+                success: true,
+                message: 'OTP generated (Email disabled)',
+                data: { mockOtp: isDev ? otp : undefined }
+            });
+        }
+
+        try {
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.subject = 'Reset Your ECare+ Password';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Password Reset Request</h2>
+                    <p>Your password reset code is:</p>
+                    <h1 style="color: #2196F3; letter-spacing: 5px;">${otp}</h1>
+                    <p>This code expires in 10 minutes.</p>
+                </div>
+            `;
+            sendSmtpEmail.sender = { name: 'ECare+', email: process.env.EMAIL_USER || 'noreply@ecareplus.com' };
+            sendSmtpEmail.to = [{ email }];
+
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+            return res.status(200).json({
+                success: true,
+                message: 'Password reset code sent to your email'
+            });
+        } catch (emailError) {
+            console.error('Email send error:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send email',
+                error: 'EMAIL_SEND_FAILED'
+            });
+        }
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An error occurred',
+            error: 'INTERNAL_SERVER_ERROR'
+        });
+    }
+};
+
+// Verify Reset OTP
+export const verifyResetOtp = async (req: Request, res: Response) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: 'Email and OTP required' });
+        }
+
+        const doctor = await prisma.doctor.findUnique({ where: { email } });
+        if (!doctor || doctor.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        if (doctor.otpExpiry && new Date() > doctor.otpExpiry) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'OTP verified successfully'
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Verification failed' });
+    }
+};
+
+// Reset Password
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, message: 'All fields required' });
+        }
+
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.valid) {
+            return res.status(400).json({ success: false, message: passwordValidation.error });
+        }
+
+        const doctor = await prisma.doctor.findUnique({ where: { email } });
+        if (!doctor || doctor.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid request' });
+        }
+
+        if (doctor.otpExpiry && new Date() > doctor.otpExpiry) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.doctor.update({
+            where: { email },
+            data: {
+                password: hashedPassword,
+                otp: null,
+                otpExpiry: null
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Password has been reset successfully'
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Password reset failed' });
     }
 };
