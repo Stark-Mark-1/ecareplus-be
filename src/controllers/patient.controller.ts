@@ -393,13 +393,13 @@ export const verifyOtp = async (req: Request, res: Response) => {
 // Personal Info: Name, Phone, Gender, Age, City
 export const onboardingPersonalInfo = async (req: Request, res: Response) => {
     try {
-        const { patientId, name, phone, gender, age, city } = req.body;
+        const { patientId, name, phone, gender, age, city, state, issues } = req.body;
 
         // Validation
-        if (!patientId || !name || !phone || !gender || !age || !city) {
+        if (!patientId || !name || !phone || !gender || !age || !city || !state) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required: name, phone, gender, age, city',
+                message: 'All fields are required: name, phone, gender, age, city, state',
                 error: 'MISSING_FIELDS'
             });
         }
@@ -445,6 +445,22 @@ export const onboardingPersonalInfo = async (req: Request, res: Response) => {
             });
         }
 
+        if (typeof state !== 'string' || state.trim().length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: 'State must be at least 2 characters long',
+                error: 'INVALID_STATE'
+            });
+        }
+
+        if (issues && (!Array.isArray(issues) || !issues.every(i => typeof i === 'string'))) {
+            return res.status(400).json({
+                success: false,
+                message: 'Issues must be an array of strings',
+                error: 'INVALID_ISSUES'
+            });
+        }
+
         // Check if patient exists and is at correct step
         const patient = await prisma.patient.findUnique({ where: { id: patientId } });
         if (!patient) {
@@ -470,7 +486,9 @@ export const onboardingPersonalInfo = async (req: Request, res: Response) => {
                 phone: phone.trim(),
                 gender: gender as Gender,
                 age: ageNum,
-                city: city.trim()
+                city: city.trim(),
+                state: state.trim(),
+                issues: issues || []
             },
         });
 
@@ -575,6 +593,8 @@ export const fetchAll = async (req: Request, res: Response) => {
                 gender: true,
                 age: true,
                 city: true,
+                state: true,
+                issues: true,
                 onboardingStep: true,
                 createdAt: true
             }
@@ -619,6 +639,8 @@ export const fetchById = async (req: Request, res: Response) => {
                 gender: true,
                 age: true,
                 city: true,
+                state: true,
+                issues: true,
                 onboardingStep: true,
                 createdAt: true,
                 updatedAt: true
