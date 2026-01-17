@@ -1,18 +1,21 @@
+
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import session from 'express-session';
-import passport from './services/googleAuth.service';
-import doctorRoutes from './routes/doctor.routes';
-import patientRoutes from './routes/patient.routes';
-import authRoutes from './routes/auth.routes';
-import { PrismaClient } from '@prisma/client';
+import passport from 'passport';
+import dotenv from 'dotenv';
+import authRoutes from './google-auth-service/auth.routes';
+import doctorRoutes from './doctor-service/doctor.routes';
+import patientRoutes from './patient-service/patient.routes';
+import leadRoutes from './lead-service/lead.routes';
+import './google-auth-service/google.auth';
+import globalErrorHandler from './middlewares/globalErrorHandler';
+import { AppError } from './utils/AppError';
 
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 // Session configuration (required for Passport)
 app.use(session({
@@ -40,25 +43,23 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-app.use('/auth', authRoutes); // Google OAuth routes
+app.use('/auth', authRoutes);
 app.use('/doctors', doctorRoutes);
 app.use('/patients', patientRoutes);
+app.use('/leads', leadRoutes);
 
 app.get('/', (req, res) => {
-    res.send('ECare+ Backend is running');
+    res.send('ECare+ API is running');
 });
 
-// Patient list stub
-app.get('/patients', async (req, res) => {
-    try {
-        const patients = await prisma.patient.findMany();
-        res.json(patients);
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch patients' });
-    }
+// Handle undefined routes
+app.all('*', (req, res, next) => {
+    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
+// Global Error Handler
+app.use(globalErrorHandler);
 
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
