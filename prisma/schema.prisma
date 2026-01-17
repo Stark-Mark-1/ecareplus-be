@@ -14,6 +14,13 @@ enum Gender {
     PREFER_NOT_TO_SAY
 }
 
+enum AppointmentStatus {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    COMPLETED
+}
+
 enum OnboardingStep {
     EMAIL_VERIFIED
     PERSONAL_INFO_COMPLETE
@@ -71,8 +78,9 @@ model Doctor {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    savedByPatients Patient[] @relation("SavedDoctors")
+    savedByPatients Patient[]     @relation("SavedDoctors")
     leads           Lead[] // Patients who viewed this doctor's profile
+    appointments    Appointment[]
 }
 
 enum PatientOnboardingStep {
@@ -103,8 +111,9 @@ model Patient {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    savedDoctors Doctor[] @relation("SavedDoctors")
+    savedDoctors Doctor[]      @relation("SavedDoctors")
     leads        Lead[] // Doctor profiles this patient has viewed
+    appointments Appointment[]
 }
 
 // Lead model to track when patients view doctor profiles
@@ -123,6 +132,22 @@ model Lead {
     updatedAt DateTime @updatedAt
 
     @@unique([doctorId, patientId]) // Prevent duplicate leads for same doctor-patient pair
+    @@index([doctorId])
+    @@index([patientId])
+}
+
+model Appointment {
+    id          String            @id @default(uuid())
+    doctorId    String
+    doctor      Doctor            @relation(fields: [doctorId], references: [id])
+    patientId   String
+    patient     Patient           @relation(fields: [patientId], references: [id])
+    scheduledAt DateTime
+    meetingLink String?
+    status      AppointmentStatus @default(PENDING)
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
+
     @@index([doctorId])
     @@index([patientId])
 }

@@ -11,7 +11,7 @@ import leadRoutes from './lead-service/lead.routes';
 import './google-auth-service/google.auth';
 import globalErrorHandler from './middlewares/globalErrorHandler';
 import { AppError } from './utils/AppError';
-
+import appointmentRoutes from './appointment-service/appointment.routes';
 dotenv.config();
 
 const app = express();
@@ -47,6 +47,7 @@ app.use('/auth', authRoutes);
 app.use('/doctors', doctorRoutes);
 app.use('/patients', patientRoutes);
 app.use('/leads', leadRoutes);
+app.use('/appointments', appointmentRoutes);
 
 app.get('/', (req, res) => {
     res.send('ECare+ API is running');
