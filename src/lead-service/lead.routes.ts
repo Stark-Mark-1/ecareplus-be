@@ -16,14 +16,7 @@ router.post('/:id/view', validate(viewProfileSchema), asyncHandler(async (req: R
     const { id } = req.params;
     const { patientId } = req.body;
     
-    // Note: In a real app, logic to return doctor profile data would be here too, 
-    // but typically specialized logic like "Lead Generation" might be a side effect.
-    // For now, I'll assume this endpoint is specifically for the "View" action which might return the profile OR just register the view.
-    // The previous implementation returned the *updated doctor*. 
-    // I should probably call DoctorService to get the result if I want to match behavior, 
-    // but the instruction is to separate lead service. 
-    // I will call `registerProfileView` here.
-    
+   
     if (patientId) {
         await leadService.registerProfileView(id, patientId);
     }

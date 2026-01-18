@@ -100,15 +100,9 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     const doctors = await doctorService.getAllDoctors();
     res.json({ success: true, data: doctors });
 }));
-
-// Legacy: Get leads for a doctor. New: /api/leads/my-leads.
-// Attempting to support legacy path /api/doctors/:id/leads
 router.get('/:id/leads', authenticateJWT, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    // Check if req.user.doctorId matches :id
-    if (req.user?.type !== 'doctor') throw new AppError('Forbidden', FORBIDDEN);
-    
-    // In legacy controller, it took :id. Security wise, usually you check if it's "MY" leads.
-    const leads = await leadService.getLeadsForDoctor(req.params.id);
+     if (req.user?.type !== 'doctor') throw new AppError('Forbidden', FORBIDDEN);
+   const leads = await leadService.getLeadsForDoctor(req.params.id);
     res.json({ success: true, data: leads });
 }));
 

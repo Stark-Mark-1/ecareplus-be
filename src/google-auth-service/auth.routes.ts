@@ -30,17 +30,12 @@ router.get('/google/patient', (req, res, next) => {
 router.get('/google/callback', 
     passport.authenticate('google', { failureRedirect: `${FRONTEND_URL}/login?error=auth_failed` }),
     (req: any, res) => {
-        // Successful authentication
-        const result = req.user; // result from handleGoogleAuth in strategy
-        
+           const result = req.user;
         if (result && result.success) {
             const { token, redirectTo, user } = result;
             const userType = user.specialty ? 'doctor' : 'patient';
             
-            // Legacy behavior: Redirect directly to the dashboard/onboarding page with token
-            // instead of a central /auth/callback page.
-            // This matches src/routes/auth.routes.ts line 63.
-            const redirectUrl = `${FRONTEND_URL}${redirectTo}?token=${token}&userType=${userType}&isNewUser=${result.isNewUser}&isReturningIncompleteUser=${result.isReturningIncompleteUser || false}`;
+              const redirectUrl = `${FRONTEND_URL}${redirectTo}?token=${token}&userType=${userType}&isNewUser=${result.isNewUser}&isReturningIncompleteUser=${result.isReturningIncompleteUser || false}`;
             
             res.redirect(redirectUrl);
         } else {
@@ -49,8 +44,7 @@ router.get('/google/callback',
     }
 );
 
-// Manual Google auth endpoint (for mobile/API usage)
-// Manual Google auth endpoint (for mobile/API usage)
+
 router.post('/google/verify', asyncHandler(async (req: any, res: any, next: any) => {
     const { googleToken, userType } = req.body;
 

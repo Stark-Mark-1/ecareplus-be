@@ -10,9 +10,7 @@ import { signupSchema, loginSchema, verifyOtpSchema, forgotPasswordSchema, reset
 import { authenticateJWT, AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 const router = Router();
-// local asyncHandler removed, using imported one
 
-// Auth Routes for Patient
 router.post('/onboarding/auth', validate(signupSchema), asyncHandler(async (req: Request, res: Response) => {
     const { patient, otp } = await patientService.createPatient(req.body);
     const isDev = process.env.NODE_ENV !== 'production';

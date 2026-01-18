@@ -137,16 +137,17 @@ model Lead {
 }
 
 model Appointment {
-    id          String            @id @default(uuid())
-    doctorId    String
-    doctor      Doctor            @relation(fields: [doctorId], references: [id])
-    patientId   String
-    patient     Patient           @relation(fields: [patientId], references: [id])
-    scheduledAt DateTime
-    meetingLink String?
-    status      AppointmentStatus @default(PENDING)
-    createdAt   DateTime          @default(now())
-    updatedAt   DateTime          @updatedAt
+    id           String            @id @default(uuid())
+    doctorId     String
+    doctor       Doctor            @relation(fields: [doctorId], references: [id])
+    patientId    String
+    patient      Patient           @relation(fields: [patientId], references: [id])
+    scheduledAt  DateTime
+    scheduledEnd DateTime
+    meetingName  String?
+    status       AppointmentStatus @default(PENDING)
+    createdAt    DateTime          @default(now())
+    updatedAt    DateTime          @updatedAt
 
     @@index([doctorId])
     @@index([patientId])

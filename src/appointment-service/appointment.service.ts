@@ -5,7 +5,7 @@ import { BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR } from '../utils/httpStat
 import * as emailService from '../email-service/email.service';
 import { AppointmentStatus } from '@prisma/client';
 
-export const scheduleAppointment = async (doctorId: string, patientId: string, scheduledAt: string, meetingLink: string) => {
+export const scheduleAppointment = async (doctorId: string, patientId: string, scheduledAt: string, scheduledEnd: string, meetingName: string) => {
     try {
         const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
         const patient = await prisma.patient.findUnique({ where: { id: patientId } });
@@ -14,8 +14,10 @@ export const scheduleAppointment = async (doctorId: string, patientId: string, s
             throw new AppError('Doctor or Patient not found', NOT_FOUND);
         }
 
-        const appointmentDate = new Date(scheduledAt);
-        if (isNaN(appointmentDate.getTime())) {
+        const appointmentStart = new Date(scheduledAt);
+        const appointmentEnd = new Date(scheduledEnd);
+
+        if (isNaN(appointmentStart.getTime()) || isNaN(appointmentEnd.getTime())) {
             throw new AppError('Invalid date format', BAD_REQUEST);
         }
 
@@ -23,8 +25,9 @@ export const scheduleAppointment = async (doctorId: string, patientId: string, s
             data: {
                 doctorId,
                 patientId,
-                scheduledAt: appointmentDate,
-                meetingLink,
+                scheduledAt: appointmentStart, // Ensure these match schema exactly
+                scheduledEnd: appointmentEnd,
+                meetingName,
                 status: AppointmentStatus.PENDING
             }
         });
@@ -32,15 +35,17 @@ export const scheduleAppointment = async (doctorId: string, patientId: string, s
         // Send confirmation emails
         const doctorHtml = `
             <p>You have a new appointment scheduled with ${patient.name}.</p>
-            <p>Date: ${appointmentDate.toLocaleString()}</p>
-            <p>Meeting Link: <a href="${meetingLink}">${meetingLink}</a></p>
+            <p>Start: ${appointmentStart.toLocaleString()}</p>
+            <p>End: ${appointmentEnd.toLocaleString()}</p>
+            <p>Meeting Name: ${meetingName}</p>
         `;
         await emailService.sendEmail(doctor.email, 'New Appointment Scheduled', doctorHtml);
 
         const patientHtml = `
             <p>Your appointment with Dr. ${doctor.name} has been scheduled.</p>
-            <p>Date: ${appointmentDate.toLocaleString()}</p>
-            <p>Meeting Link: <a href="${meetingLink}">${meetingLink}</a></p>
+            <p>Start: ${appointmentStart.toLocaleString()}</p>
+            <p>End: ${appointmentEnd.toLocaleString()}</p>
+            <p>Meeting Name: ${meetingName}</p>
         `;
         await emailService.sendEmail(patient.email, 'Appointment Confirmation', patientHtml);
 

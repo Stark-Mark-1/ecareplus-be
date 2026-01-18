@@ -13,14 +13,14 @@ router.post('/schedule', authenticateJWT, asyncHandler(async (req: any, res: any
         throw new AppError('Only doctors can schedule appointments', FORBIDDEN);
     }
 
-    const { patientId, scheduledAt, meetingLink } = req.body;
+    const { patientId, scheduledAt, scheduledEnd, meetingName } = req.body;
     const doctorId = req.user.id;
 
-    if (!patientId || !scheduledAt || !meetingLink) {
+    if (!patientId || !scheduledAt || !scheduledEnd || !meetingName) {
         throw new AppError('Missing required fields', BAD_REQUEST);
     }
 
-    const appointment = await appointmentService.scheduleAppointment(doctorId, patientId, scheduledAt, meetingLink);
+    const appointment = await appointmentService.scheduleAppointment(doctorId, patientId, scheduledAt, scheduledEnd, meetingName);
     res.status(201).json({ success: true, data: appointment });
 }));
 
