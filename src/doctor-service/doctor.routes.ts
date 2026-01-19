@@ -99,7 +99,8 @@ router.post('/reset-password', validate(resetPasswordSchema), asyncHandler(async
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const result = await doctorService.getAllDoctors(page, limit);
+    const specialty = req.query.specialty as string | undefined;
+    const result = await doctorService.getAllDoctors(page, limit, specialty);
     res.json({ success: true, ...result });
 }));
 router.get('/:id/leads', authenticateJWT, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {

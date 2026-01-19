@@ -113,11 +113,21 @@ export const updateDoctorProfile = async (id: string, data: any) => {
     }
 };
 
-export const getAllDoctors = async (page: number = 1, limit: number = 10) => {
+export const getAllDoctors = async (page: number = 1, limit: number = 10, specialty?: string) => {
     try {
         const skip = (page - 1) * limit;
+        const where: any = {};
+        
+        if (specialty) {
+            where.specialty = {
+                contains: specialty,
+                mode: 'insensitive'
+            };
+        }
+
         const [doctors, total] = await Promise.all([
             prisma.doctor.findMany({
+                where,
                 skip,
                 take: limit,
                 select: {
@@ -129,7 +139,7 @@ export const getAllDoctors = async (page: number = 1, limit: number = 10) => {
                     viewCount: true,
                 }
             }),
-            prisma.doctor.count()
+            prisma.doctor.count({ where })
         ]);
 
         return {
