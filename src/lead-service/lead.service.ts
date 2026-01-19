@@ -22,7 +22,7 @@ export const registerProfileView = async (doctorId: string, patientId: string) =
         });
 
         const now = new Date();
-        let shouldSendEmail = false;
+        let shouldSendEmail = true;
 
         if (!existingLead) {
             await prisma.lead.create({
@@ -42,12 +42,16 @@ export const registerProfileView = async (doctorId: string, patientId: string) =
         }
 
         if (shouldSendEmail) {
+            console.log(`[LeadService] Sending email to ${doctor.email} for lead from ${patient.name}`);
             const subject = existingLead ? 'Patient Re-visited Your Profile' : 'New Patient Lead';
             const html = `
                 <p>Patient ${patient.name} (${patient.gender}, ${patient.age}) viewed your profile.</p>
                 <p>Location: ${patient.city}</p>
             `;
-            await emailService.sendEmail(doctor.email, subject, html);
+            const sent = await emailService.sendEmail(doctor.email, subject, html);
+            console.log(`[LeadService] Email sent result: ${sent}`);
+        } else {
+            console.log(`[LeadService] Email NOT sent. Existing lead: ${!!existingLead}.`);
         }
     } catch (error: any) {
         if (error instanceof AppError) throw error;
