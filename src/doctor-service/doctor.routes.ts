@@ -106,13 +106,13 @@ router.get('/:id/leads', authenticateJWT, asyncHandler(async (req: Authenticated
     res.json({ success: true, data: leads });
 }));
 
-router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
+router.get('/:id',authenticateJWT, asyncHandler(async (req: Request, res: Response) => {
     const doctor = await doctorService.findDoctorById(req.params.id);
     if (!doctor) throw new AppError('Doctor not found', NOT_FOUND);
     res.json({ success: true, data: doctor });
 }));
 
-router.post('/:id/view', asyncHandler(async (req: Request, res: Response) => {
+router.post('/:id/view',authenticateJWT, asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { patientId } = req.body;
     if (patientId) {
