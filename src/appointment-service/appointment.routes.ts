@@ -28,16 +28,20 @@ router.get('/doctor/my-appointments', authenticateJWT, asyncHandler(async (req: 
     if (req.user?.type !== 'doctor') {
         throw new AppError('Forbidden', FORBIDDEN);
     }
-    const appointments = await appointmentService.getDoctorAppointments(req.user.id);
-    res.json({ success: true, data: appointments });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const result = await appointmentService.getDoctorAppointments(req.user.id, page, limit);
+    res.json({ success: true, ...result });
 }));
 
 router.get('/patient/my-appointments', authenticateJWT, asyncHandler(async (req: any, res: any) => {
     if (req.user?.type !== 'patient') {
         throw new AppError('Forbidden', FORBIDDEN);
     }
-    const appointments = await appointmentService.getPatientAppointments(req.user.id);
-    res.json({ success: true, data: appointments });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const result = await appointmentService.getPatientAppointments(req.user.id, page, limit);
+    res.json({ success: true, ...result });
 }));
 
 export default router;

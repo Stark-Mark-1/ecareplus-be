@@ -64,10 +64,6 @@ export const registerProfileView = async (doctorId: string, patientId: string) =
                                     <td style="padding: 8px 0; color: #718096; font-weight: bold;">Phone:</td>
                                     <td style="padding: 8px 0; color: #2d3748;">${patient.phone || 'Not provided'}</td>
                                 </tr>
-                                <tr>
-                                    <td style="padding: 8px 0; color: #718096; font-weight: bold;">Email:</td>
-                                    <td style="padding: 8px 0; color: #2d3748;">${patient.email}</td>
-                                </tr>
                             </table>
                         </div>
                         
