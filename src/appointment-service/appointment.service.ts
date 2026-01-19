@@ -56,25 +56,57 @@ export const scheduleAppointment = async (doctorId: string, patientId: string, s
     }
 };
 
-export const getDoctorAppointments = async (doctorId: string) => {
+export const getDoctorAppointments = async (doctorId: string, page: number = 1, limit: number = 10) => {
     try {
-        return await prisma.appointment.findMany({
-            where: { doctorId },
-            include: { patient: true },
-            orderBy: { scheduledAt: 'asc' }
-        });
+        const skip = (page - 1) * limit;
+        const [appointments, total] = await Promise.all([
+            prisma.appointment.findMany({
+                where: { doctorId },
+                include: { patient: true },
+                orderBy: { scheduledAt: 'asc' },
+                skip,
+                take: limit
+            }),
+            prisma.appointment.count({ where: { doctorId } })
+        ]);
+
+        return {
+            data: appointments,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     } catch (error: any) {
         throw new AppError('Error fetching appointments: ' + error.message, INTERNAL_SERVER_ERROR);
     }
 };
 
-export const getPatientAppointments = async (patientId: string) => {
+export const getPatientAppointments = async (patientId: string, page: number = 1, limit: number = 10) => {
     try {
-        return await prisma.appointment.findMany({
-            where: { patientId },
-            include: { doctor: true },
-            orderBy: { scheduledAt: 'asc' }
-        });
+        const skip = (page - 1) * limit;
+        const [appointments, total] = await Promise.all([
+            prisma.appointment.findMany({
+                where: { patientId },
+                include: { doctor: true },
+                orderBy: { scheduledAt: 'asc' },
+                skip,
+                take: limit
+            }),
+            prisma.appointment.count({ where: { patientId } })
+        ]);
+
+        return {
+            data: appointments,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     } catch (error: any) {
         throw new AppError('Error fetching appointments: ' + error.message, INTERNAL_SERVER_ERROR);
     }

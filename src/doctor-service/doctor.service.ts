@@ -113,18 +113,34 @@ export const updateDoctorProfile = async (id: string, data: any) => {
     }
 };
 
-export const getAllDoctors = async () => {
+export const getAllDoctors = async (page: number = 1, limit: number = 10) => {
     try {
-        return await prisma.doctor.findMany({
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                specialty: true,
-                city: true,
-                viewCount: true,
+        const skip = (page - 1) * limit;
+        const [doctors, total] = await Promise.all([
+            prisma.doctor.findMany({
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    specialty: true,
+                    city: true,
+                    viewCount: true,
+                }
+            }),
+            prisma.doctor.count()
+        ]);
+
+        return {
+            data: doctors,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
             }
-        });
+        };
     } catch (error: any) {
         throw new AppError('Error fetching doctors: ' + error.message, INTERNAL_SERVER_ERROR);
     }

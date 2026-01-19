@@ -27,11 +27,14 @@ router.post('/:id/view', validate(viewProfileSchema), asyncHandler(async (req: R
 
 router.get('/my-leads', authenticateJWT, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     // Assuming authenticateJWT populates req.user with { doctorId } if it's a doctor
-    const doctorId = req.user?.doctorId; // Need to verify middleware typing
+    const doctorId = req.user?.id; // Assuming req.user.id is the doctor ID
     if (!doctorId) throw new AppError('Forbidden', FORBIDDEN);
     
-    const leads = await leadService.getLeadsForDoctor(doctorId);
-    res.json({ success: true, data: leads });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const result = await leadService.getLeadsForDoctor(doctorId, page, limit);
+    res.json({ success: true, ...result });
 }));
 
 export default router;

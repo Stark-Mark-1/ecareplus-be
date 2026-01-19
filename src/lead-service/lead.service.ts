@@ -91,13 +91,29 @@ export const registerProfileView = async (doctorId: string, patientId: string) =
     }
 };
 
-export const getLeadsForDoctor = async (doctorId: string) => {
+export const getLeadsForDoctor = async (doctorId: string, page: number = 1, limit: number = 10) => {
     try {
-        return await prisma.lead.findMany({
-            where: { doctorId },
-            include: { patient: true },
-            orderBy: { viewedAt: 'desc' }
-        });
+        const skip = (page - 1) * limit;
+        const [leads, total] = await Promise.all([
+            prisma.lead.findMany({
+                where: { doctorId },
+                include: { patient: true },
+                orderBy: { viewedAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.lead.count({ where: { doctorId } })
+        ]);
+
+        return {
+            data: leads,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     } catch (error: any) {
         throw new AppError('Error fetching leads: ' + error.message, INTERNAL_SERVER_ERROR);
     }

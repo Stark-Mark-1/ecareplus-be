@@ -97,13 +97,17 @@ router.post('/reset-password', validate(resetPasswordSchema), asyncHandler(async
 }));
 
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
-    const doctors = await doctorService.getAllDoctors();
-    res.json({ success: true, data: doctors });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const result = await doctorService.getAllDoctors(page, limit);
+    res.json({ success: true, ...result });
 }));
 router.get('/:id/leads', authenticateJWT, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
      if (req.user?.type !== 'doctor') throw new AppError('Forbidden', FORBIDDEN);
-   const leads = await leadService.getLeadsForDoctor(req.params.id);
-    res.json({ success: true, data: leads });
+     const page = parseInt(req.query.page as string) || 1;
+     const limit = parseInt(req.query.limit as string) || 10;
+     const result = await leadService.getLeadsForDoctor(req.params.id, page, limit);
+     res.json({ success: true, ...result });
 }));
 
 router.get('/:id',authenticateJWT, asyncHandler(async (req: Request, res: Response) => {
