@@ -122,7 +122,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                     isReturningIncompleteUser: false,
                     user: patient,
                     token,
-                    redirectTo: patient.name ? '/patient' : '/patient' 
+                    redirectTo: patient.name ? '/patients' : '/patients' 
                 };
             }
 
@@ -150,7 +150,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: true,
                         user: updatedPatient,
                         token,
-                        redirectTo: '/patient'
+                        redirectTo: '/patients'
                     };
                 } else {
                     const updatedPatient = await prisma.patient.update({
@@ -165,7 +165,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                         isReturningIncompleteUser: false,
                         user: updatedPatient,
                         token,
-                        redirectTo: '/patient'
+                        redirectTo: '/patients'
                     };
                 }
             }
@@ -186,7 +186,7 @@ export const handleGoogleAuth = async (googleId: string, email: string, name: st
                 isReturningIncompleteUser: false,
                 user: newPatient,
                 token,
-                redirectTo: '/patient'
+                redirectTo: '/patients'
             };
         }
     } catch (error: any) {
