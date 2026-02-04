@@ -53,6 +53,13 @@ router.post('/verify-payment', authenticateJWT, asyncHandler(async (req: Request
 
     if (!isValid) throw new AppError('Invalid payment signature', BAD_REQUEST);
 
+    // Find the payment to get the appointment ID
+    const payment = await prisma.payment.findUnique({
+        where: { razorpayOrderId: razorpay_order_id }
+    });
+
+    if (!payment) throw new AppError('Payment record not found', NOT_FOUND);
+
     // Update payment and appointment status
     await prisma.$transaction([
         prisma.payment.update({
@@ -64,7 +71,7 @@ router.post('/verify-payment', authenticateJWT, asyncHandler(async (req: Request
             }
         }),
         prisma.appointment.update({
-            where: { id: (await prisma.payment.findUnique({ where: { razorpayOrderId: razorpay_order_id } }))?.appointmentId },
+            where: { id: payment.appointmentId },
             data: { status: 'CONFIRMED' }
         })
     ]);
