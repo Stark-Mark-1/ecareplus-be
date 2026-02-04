@@ -4,7 +4,7 @@ import asyncHandler from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
 import { FORBIDDEN, NOT_FOUND } from '../utils/httpStatusCodes';
 import validate from '../middlewares/validateResource';
-import { onboardingPersonalInfoSchema, onboardingProfessionalInfoSchema, onboardingAvailabilitySchema } from './doctor.schema';
+import { onboardingPersonalInfoSchema, onboardingProfessionalInfoSchema, onboardingAvailabilitySchema, onboardingPaymentInfoSchema } from './doctor.schema';
 import * as doctorService from './doctor.service';
 import * as leadService from '../lead-service/lead.service'; // For lead compatibility
 import { signupSchema, loginSchema, verifyOtpSchema, forgotPasswordSchema, resetPasswordSchema } from '../google-auth-service/auth.schema';
@@ -74,7 +74,32 @@ router.post('/onboarding/professional-info', validate(onboardingProfessionalInfo
 
 router.post('/onboarding/availability', validate(onboardingAvailabilitySchema), asyncHandler(async (req: Request, res: Response) => {
     const { doctorId, ...data } = req.body;
-    const updated = await doctorService.updateDoctorProfile(doctorId, { ...data, onboardingStep: 'COMPLETE' }); 
+    const updated = await doctorService.updateDoctorProfile(doctorId, { ...data, onboardingStep: 'PAYMENT_INFO_COMPLETE' }); 
+    res.json({ success: true, data: updated });
+}));
+
+router.post('/onboarding/payment-info', validate(onboardingPaymentInfoSchema), asyncHandler(async (req: Request, res: Response) => {
+    const { doctorId, consultationFee, ...bankData } = req.body;
+    const doctor = await doctorService.findDoctorById(doctorId);
+    if (!doctor) throw new AppError('Doctor not found', NOT_FOUND);
+
+    // Create Razorpay Linked Account
+    const { createLinkedAccount } = require('../payment-service/razorpay.service');
+    const razorpayAccount = await createLinkedAccount({
+        email: doctor.email,
+        name: doctor.name || bankData.bankBeneficiaryName,
+        phone: doctor.contactNumber || '', // Use contactNumber as phone
+        bankAccountNumber: bankData.bankAccountNumber,
+        bankIfsc: bankData.bankIfsc,
+        bankBeneficiaryName: bankData.bankBeneficiaryName
+    });
+
+    const updated = await doctorService.updateDoctorProfile(doctorId, { 
+        ...bankData, 
+        consultationFee: consultationFee * 100, // Convert to paise
+        razorpayAccountId: razorpayAccount.id,
+        onboardingStep: 'COMPLETE' 
+    }); 
     res.json({ success: true, data: updated });
 }));
 

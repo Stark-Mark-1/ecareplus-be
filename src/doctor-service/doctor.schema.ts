@@ -34,3 +34,13 @@ export const onboardingAvailabilitySchema = z.object({
         availableTiming: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]-([0-1][0-9]|2[0-3]):[0-5][0-9]$/),
     }),
 });
+
+export const onboardingPaymentInfoSchema = z.object({
+    body: z.object({
+        doctorId: z.string().uuid(),
+        consultationFee: z.number().min(0), // Amount in INR, we'll convert to paise in service
+        bankAccountNumber: z.string().min(9).max(18),
+        bankIfsc: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/),
+        bankBeneficiaryName: z.string().min(2),
+    }),
+});

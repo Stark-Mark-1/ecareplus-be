@@ -21,11 +21,19 @@ enum AppointmentStatus {
     COMPLETED
 }
 
+enum PaymentStatus {
+    PENDING
+    SUCCESS
+    FAILED
+    REFUNDED
+}
+
 enum OnboardingStep {
     EMAIL_VERIFIED
     PERSONAL_INFO_COMPLETE
     PROFESSIONAL_INFO_COMPLETE
     AVAILABILITY_COMPLETE
+    PAYMENT_INFO_COMPLETE
     COMPLETE
 }
 
@@ -69,6 +77,13 @@ model Doctor {
     availableTiming String? // e.g., "09:00-17:00"
 
     onboardingStep OnboardingStep @default(EMAIL_VERIFIED)
+
+    // Payment Info
+    consultationFee     Int? // In paise (e.g., 50000 for 500 INR)
+    razorpayAccountId   String?
+    bankAccountNumber   String?
+    bankIfsc            String?
+    bankBeneficiaryName String?
 
     otp       String?
     otpExpiry DateTime?
@@ -148,7 +163,29 @@ model Appointment {
     status       AppointmentStatus @default(PENDING)
     createdAt    DateTime          @default(now())
     updatedAt    DateTime          @updatedAt
+    payment      Payment?
 
     @@index([doctorId])
     @@index([patientId])
+}
+
+model Payment {
+    id String @id @default(uuid())
+
+    appointmentId String      @unique
+    appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+    razorpayOrderId   String  @unique
+    razorpayPaymentId String? @unique
+    razorpaySignature String?
+
+    amount   Int // In paise
+    currency String        @default("INR")
+    status   PaymentStatus @default(PENDING)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([appointmentId])
+    @@index([razorpayOrderId])
 }
