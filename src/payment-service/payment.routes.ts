@@ -2,7 +2,7 @@
 import { Router, Request, Response } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
-import { NOT_FOUND, BAD_REQUEST } from '../utils/httpStatusCodes';
+import { NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR } from '../utils/httpStatusCodes';
 import prisma from '../config/prisma';
 import * as razorpayService from './razorpay.service';
 import { authenticateJWT, AuthenticatedRequest } from '../middlewares/auth.middleware';
@@ -27,6 +27,10 @@ router.post('/create-order', authenticateJWT, asyncHandler(async (req: Authentic
         appointment.doctor.consultationFee,
         appointment.doctor.razorpayAccountId
     );
+
+    if (!order.id) {
+        throw new AppError('Failed to create Razorpay order', INTERNAL_SERVER_ERROR);
+    }
 
     // Track payment in DB
     await prisma.payment.create({

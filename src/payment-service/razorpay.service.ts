@@ -10,7 +10,8 @@ const getRazorpayInstance = () => {
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!key_id || !key_secret) {
-        throw new AppError('Razorpay keys are missing in environment variables', INTERNAL_SERVER_ERROR);
+        console.warn('Razorpay keys are missing in environment variables. Skipping Razorpay operations.');
+        return null;
     }
 
     if (!razorpayInstance) {
@@ -25,6 +26,8 @@ const getRazorpayInstance = () => {
 export const createLinkedAccount = async (doctor: { email: string, name: string, phone: string, bankAccountNumber: string, bankIfsc: string, bankBeneficiaryName: string }) => {
     try {
         const razorpay = getRazorpayInstance();
+        if (!razorpay) return { id: null, status: 'skipped' };
+        
         const account = await (razorpay.accounts as any).create({
             email: doctor.email,
             phone: doctor.phone,
@@ -56,6 +59,8 @@ export const createLinkedAccount = async (doctor: { email: string, name: string,
 export const createOrder = async (amount: number, doctorRazorpayId: string, commissionPercent: number = 10) => {
     try {
         const razorpay = getRazorpayInstance();
+        if (!razorpay) return { id: null, status: 'skipped' };
+        
         const commission = Math.round(amount * (commissionPercent / 100));
         const amountToTransfer = amount - commission;
 
