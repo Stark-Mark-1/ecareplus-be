@@ -11,7 +11,14 @@ const validate = (schema: z.ZodObject<any, any>) => (req: Request, res: Response
         });
         next();
     } catch (e: any) {
-        return res.status(400).send(e.errors);
+        return res.status(400).json({
+            status: 'error',
+            message: 'Validation failed',
+            errors: e.errors.map((err: any) => ({
+                path: err.path.join('.'),
+                message: err.message
+            }))
+        });
     }
 };
 

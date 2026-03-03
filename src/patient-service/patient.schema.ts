@@ -10,7 +10,7 @@ export const patientPersonalInfoSchema = z.object({
         gender: z.nativeEnum(Gender),
         age: z.number().min(1).max(120),
         city: z.string().min(2),
-        state: z.string().min(2),
+        state: z.string().min(2).optional(),
         issues: z.array(z.string()).optional(),
     }),
 });
