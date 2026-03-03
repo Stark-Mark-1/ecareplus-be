@@ -3,9 +3,11 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-export interface AuthRequest extends Request {
+export interface AuthenticatedRequest extends Request {
     user?: any;
 }
+export type AuthRequest = AuthenticatedRequest; // Backward compatibility if needed
+
 
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
