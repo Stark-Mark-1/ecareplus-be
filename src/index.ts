@@ -1,9 +1,10 @@
+import dotenv from 'dotenv';
+dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from 'passport';
-import dotenv from 'dotenv';
 import authRoutes from './google-auth-service/auth.routes';
 import doctorRoutes from './doctor-service/doctor.routes';
 import patientRoutes from './patient-service/patient.routes';
@@ -13,7 +14,6 @@ import globalErrorHandler from './middlewares/globalErrorHandler';
 import { AppError } from './utils/AppError';
 import appointmentRoutes from './appointment-service/appointment.routes';
 import paymentRoutes from './payment-service/payment.routes';
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
