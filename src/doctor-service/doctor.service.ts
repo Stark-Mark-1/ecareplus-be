@@ -113,11 +113,25 @@ export const updateDoctorProfile = async (id: string, data: any) => {
     }
 };
 
-export const getAllDoctors = async (page: number = 1, limit: number = 10, specialty?: string) => {
+const DOCTOR_SORT_OPTIONS = ['experience_desc', 'experience_asc'] as const;
+export type DoctorSortOption = typeof DOCTOR_SORT_OPTIONS[number];
+
+const buildDoctorOrderBy = (sortBy?: string) => {
+    switch (sortBy) {
+        case 'experience_desc':
+            return [{ yearsOfExperience: { sort: 'desc' as const, nulls: 'last' as const } }, { createdAt: 'desc' as const }];
+        case 'experience_asc':
+            return [{ yearsOfExperience: { sort: 'asc' as const, nulls: 'last' as const } }, { createdAt: 'desc' as const }];
+        default:
+            return { createdAt: 'desc' as const };
+    }
+};
+
+export const getAllDoctors = async (page: number = 1, limit: number = 10, specialty?: string, sortBy?: string) => {
     try {
         const skip = (page - 1) * limit;
         const where: any = {};
-        
+
         if (specialty) {
             where.specialty = {
                 contains: specialty,
@@ -130,12 +144,21 @@ export const getAllDoctors = async (page: number = 1, limit: number = 10, specia
                 where,
                 skip,
                 take: limit,
+                orderBy: buildDoctorOrderBy(sortBy),
                 select: {
                     id: true,
                     email: true,
                     name: true,
                     specialty: true,
                     city: true,
+                    locality: true,
+                    address: true,
+                    latestQualification: true,
+                    yearsOfExperience: true,
+                    languages: true,
+                    contactNumber: true,
+                    whatsappNumber: true,
+                    availableDays: true,
                     viewCount: true,
                 }
             }),
