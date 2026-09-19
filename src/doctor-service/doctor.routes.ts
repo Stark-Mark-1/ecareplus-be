@@ -121,11 +121,15 @@ router.post('/reset-password', validate(resetPasswordSchema), asyncHandler(async
     res.json({ ...result });
 }));
 
+const VALID_DOCTOR_SORT_OPTIONS = ['experience_desc', 'experience_asc'];
+
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const specialty = req.query.specialty as string | undefined;
-    const result = await doctorService.getAllDoctors(page, limit, specialty);
+    const sortByParam = req.query.sortBy as string | undefined;
+    const sortBy = VALID_DOCTOR_SORT_OPTIONS.includes(sortByParam || '') ? sortByParam : undefined;
+    const result = await doctorService.getAllDoctors(page, limit, specialty, sortBy);
     res.json({ success: true, ...result });
 }));
 router.get('/:id/leads', authenticateJWT, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
